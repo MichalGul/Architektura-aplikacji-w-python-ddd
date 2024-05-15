@@ -1,0 +1,7 @@
+POST http://localhost:5000/allocate
+Content-Type: application/json
+
+{"orderid": 2, "sku": "SMALL-TABLE", "qty": 5}
+
+###
+

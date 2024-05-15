@@ -1,0 +1,5 @@
+pytest
+sqlalchemy<2
+flask
+psycopg2
+requests

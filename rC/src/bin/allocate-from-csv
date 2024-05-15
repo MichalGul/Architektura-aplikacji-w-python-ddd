@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+import csv
+import sys
+from pathlib import Path
+
+from allocation.service_layer import csv_uow, services
+
+
+def main(folder):
+    orders_path = Path(folder) / 'orders.csv'
+    uow = csv_uow.CsvUnitOfWork(folder)
+    with orders_path.open() as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            orderid, sku = row['orderid'], row['sku']
+            qty = int(row['qty'])
+            services.allocate(orderid, sku, qty, uow)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1])

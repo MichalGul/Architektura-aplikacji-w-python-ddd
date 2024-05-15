@@ -1,0 +1,12 @@
+# app
+psycopg2-binary
+django
+dj-database-url
+
+# tests
+pytest
+pytest-icdiff
+pytest-django
+mypy
+requests
+

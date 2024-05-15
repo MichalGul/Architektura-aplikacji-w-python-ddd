@@ -1,0 +1,14 @@
+dist: xenial
+language: python
+python: 3.8
+
+script:
+- make all
+
+after_failure:
+- make logs
+
+branches:
+  except:
+  - /.*_exercise$/
+
