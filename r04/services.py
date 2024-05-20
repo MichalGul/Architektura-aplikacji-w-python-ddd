@@ -11,6 +11,7 @@ class InvalidSku(Exception):
 def is_valid_sku(sku, batches):
     return sku in {b.sku for b in batches}
 
+
 def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:
     batches = repo.list()
     if not is_valid_sku(line.sku, batches):

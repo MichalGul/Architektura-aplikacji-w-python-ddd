@@ -57,15 +57,36 @@ def test_commits():
 def test_deallocate_decrements_available_quantity():
     repo, session = FakeRepository([]), FakeSession()
     services.add_batch("b1", "BLUE-PLINTH", 100, None, repo, session)
-    services.allocate("o1", "BLUE-PLINTH", 10, repo, session)
+    line = model.OrderLine("o1", "BLUE-PLINTH", 10)
+    services.allocate(line, repo, session)
     batch = repo.get(reference="b1")
     assert batch.available_quantity == 90
-    # services.deallocate(...
-    ...
-    assert  batch.available_quantity == 100
+    services.deallocate(batch, line)
+    assert batch.available_quantity == 100
 
 def test_deallocate_decrements_correct_quantity():
-    ... #  DO ZROBIENIA
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch("b2", "Some-shiet", 100, None, repo, session)
+    services.add_batch("b3", "Some-other-shiet", 88, None, repo, session)
+    line_shiet = model.OrderLine("o2", "Some-shiet", 5)
+    line_shiet_other = model.OrderLine("o3", "Some-other-shiet", 5)
+    services.allocate(line_shiet, repo, session)
+    services.allocate(line_shiet_other, repo, session)
+
+    b2 = repo.get(reference="b2")
+    b3 = repo.get(reference="b3")
+    assert b2.available_quantity == 95
+    assert b3.available_quantity == 83
+
+    b3.deallocate(line_shiet_other)
+    assert b3.available_quantity == 88
+    assert b2.available_quantity == 95
+
 
 def test_trying_to_deallocate_unallocated_batch():
-    ... #  DO ZROBIENIA: czy należy zgłosić błąd, czy załatwić to po cichu? Wybór należy do Ciebie.
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch("b2", "Some-shiet", 100, None, repo, session)
+    line_shiet = model.OrderLine("o2", "Some-shiet", 5)
+    b2 = repo.get(reference="b2")
+    with pytest.raises(services.ResourceUnallocated,  match=f"Line o2 was not allocated in batch b2"):
+        services.deallocate(b2, line_shiet)

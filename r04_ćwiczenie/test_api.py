@@ -17,6 +17,15 @@ def random_orderid(name=''):
     return f'order-{name}-{random_suffix()}'
 
 
+def post_to_add_batch(ref, sku, qty, eta):
+    url = config.get_api_url()
+    r = requests.post(
+        f'{url}/add_batch',
+        json={'ref': ref, 'sku': sku, 'qty': qty, 'eta': eta}
+    )
+    assert r.status_code == 201
+
+
 @pytest.mark.usefixtures('restart_api')
 def test_happy_path_returns_201_and_allocated_batch(add_stock):
     sku, othersku = random_sku(), random_sku('other')
@@ -42,7 +51,7 @@ def test_unhappy_path_returns_400_and_error_message():
     url = config.get_api_url()
     r = requests.post(f'{url}/allocate', json=data)
     assert r.status_code == 400
-    assert r.json()['message'] == f'Nieprawidłowa sku {unknown_sku}'
+    assert r.json()['message'] == f'Invalid sku {unknown_sku}'
 
 
 @pytest.mark.usefixtures('postgres_db')
@@ -56,7 +65,7 @@ def test_deallocate():
     r = requests.post(f'{url}/allocate', json={
         'orderid': order1, 'sku': sku, 'qty': 100
     })
-    assert r.json()['batchid'] == batch
+    assert r.json()['batchref'] == batch
 
     # nie można alokować drugiego zamówienia
     r = requests.post(f'{url}/allocate', json={
@@ -75,5 +84,5 @@ def test_deallocate():
         'orderid': order2, 'sku': sku, 'qty': 100
     })
     assert r.ok
-    assert r.json()['batchid'] == batch
+    assert r.json()['batchref'] == batch
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, jsonify, request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -28,3 +30,32 @@ def allocate_endpoint():
         return jsonify({'message': str(e)}), 400
 
     return jsonify({'batchref': batchref}), 201
+
+
+@app.route("/add_batch", methods=['POST'])
+def add_batch():
+    session = get_session()
+    repo = repository.SqlAlchemyRepository(session)
+    eta = request.json['eta']
+    if eta is not None:
+        eta = datetime.fromisoformat(eta).date()
+    services.add_batch(
+        request.json['ref'], request.json['sku'], request.json['qty'], eta,
+        repo, session
+    )
+    return 'OK', 201
+
+
+@app.route("/deallocate", methods=['POST'])
+def deallocate_endpoint():
+    session = get_session()
+    repo = repository.SqlAlchemyRepository(session)
+    line_to_dealocate = repo.get_line(request.json['orderid'], request.json['sku'])
+    if line_to_dealocate:
+        try:
+            batches = repo.list()
+            batch = next((batch for batch in batches if batch.has_allocated(line_to_dealocate)), None)
+            services.deallocate(batch, line_to_dealocate, session)
+        except services.ResourceUnallocated as e:
+            return jsonify({'message': str(e)}), 400
+    return 'OK', 201
