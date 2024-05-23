@@ -53,9 +53,7 @@ def deallocate_endpoint():
     line_to_dealocate = repo.get_line(request.json['orderid'], request.json['sku'])
     if line_to_dealocate:
         try:
-            batches = repo.list()
-            batch = next((batch for batch in batches if batch.has_allocated(line_to_dealocate)), None)
-            services.deallocate(batch, line_to_dealocate, session)
+            services.deallocate(line_to_dealocate, repo, session)
         except services.ResourceUnallocated as e:
             return jsonify({'message': str(e)}), 400
     return 'OK', 201

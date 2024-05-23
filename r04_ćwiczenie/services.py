@@ -30,9 +30,13 @@ def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:
     return batchref
 
 
-def deallocate(batch: Batch, line: OrderLine, session):
-    if not is_allocated(line, batch):
-        raise ResourceUnallocated(f"Line {line.orderid} was not allocated in batch {batch.reference}")
+def deallocate(line: OrderLine, repo: AbstractRepository, session):
+    batches = repo.list()
+    batch = next((batch for batch in batches if batch.has_allocated(line)), None)
+    if batch is None:
+        raise ResourceUnallocated(f"Line {line.orderid} was not allocated in any batch")
+    # if not is_allocated(line, batch):
+    #     raise ResourceUnallocated(f"Line {line.orderid} was not allocated in batch {batch.reference}")
     batch.deallocate(line)
     session.commit()
     return batch.reference
