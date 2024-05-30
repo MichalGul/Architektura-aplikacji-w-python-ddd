@@ -4,6 +4,9 @@ import requests
 
 import config
 
+import sys
+sys.path.append(r'F:\Kursy\Architektura-aplikacji-w-python-ddd\r05\tests\conftest.py')
+
 def random_suffix():
     return uuid.uuid4().hex[:6]
 

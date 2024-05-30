@@ -8,7 +8,7 @@ from sqlalchemy.orm.session import Session
 
 from allocation import config
 from allocation.adapters import repository
-
+from contextlib import contextmanager
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -31,8 +31,6 @@ DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
 ))
 
 
-class SqlAlchemyUnitOfWork:
-    ...
 
 # Jedną z możliwości jest zdefiniowanie funkcji start_uow
 # lub UnitOfWorkStarter albo UnitOfWorkManager pełniącego rolę
@@ -40,4 +38,41 @@ class SqlAlchemyUnitOfWork:
 # zwracaną przez funkcję __enter__ menedżera kontekstu.
 #
 # Taki typ by działał?
-# AbstractUnitOfWorkStarter = ContextManager[AbstractUnitOfWork]
+AbstractUnitOfWorkStarter = ContextManager[AbstractUnitOfWork]
+
+
+class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
+    def __init__(self, session_factory=DEFAULT_SESSION_FACTORY):
+        self.session_factory = session_factory
+        self.session = self.session_factory()
+        self.batches = repository.SqlAlchemyRepository(self.session)
+
+    def commit(self):
+        self.session.commit()
+
+    def rollback(self):
+        self.session.rollback()
+        self.session.close()
+
+
+class UnitOfWorkManager(AbstractUnitOfWorkStarter):
+    def __init__(self, session_factory=None):
+        self.uow: AbstractUnitOfWork = None
+        self.session_factory = session_factory or DEFAULT_SESSION_FACTORY
+
+    def __enter__(self) -> AbstractUnitOfWork:
+        self.uow = SqlAlchemyUnitOfWork(self.session_factory)
+        return self.uow
+
+    def __exit__(self, *args):
+        self.uow.rollback()
+
+
+# @contextmanager
+# def start_uow() -> AbstractUnitOfWorkStarter:
+#     uow = SqlAlchemyUnitOfWork()
+#
+#     yield uow
+#
+#     uow.rollback()
+
