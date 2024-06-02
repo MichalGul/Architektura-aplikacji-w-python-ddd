@@ -54,7 +54,7 @@ def test_allocate_errors_for_invalid_sku():
     uow = FakeUnitOfWork()
     services.add_batch("b1", "AREALSKU", 100, None, uow)
 
-    with pytest.raises(services.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
+    with pytest.raises(services.InvalidSku, match="Nieprawidłowa sku NONEXISTENTSKU"):
         services.allocate("o1", "NONEXISTENTSKU", 10, uow)
 
 

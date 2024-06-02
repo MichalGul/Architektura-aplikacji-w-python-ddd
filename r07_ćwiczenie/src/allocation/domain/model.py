@@ -19,14 +19,20 @@ def allocate(line: OrderLine, batches: List[Batch]) -> str:
         raise OutOfStock(f'Brak na stanie sku {line.sku}')
 
 class Product:
-    ''' dummy implementation, fixme'''
+    ''' Aggregate for batch and order line implementation'''
 
     def __init__(self, *args, **kwargs):
+        self.sku = kwargs.get('sku')
         self.batches = kwargs.get('batches')
+        self.version_number = kwargs.get('version_number',0)
 
-    def allocate(self, line):
-        return allocate(line,  self.batches)
-
+    def allocate(self, line) -> str:
+        try:
+            batch_reference = allocate(line,  self.batches)
+            self.version_number += 1
+            return batch_reference
+        except OutOfStock as e:
+            raise e
 
 @dataclass(unsafe_hash=True)
 class OrderLine:

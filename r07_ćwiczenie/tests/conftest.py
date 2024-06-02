@@ -63,6 +63,7 @@ def postgres_db():
 def postgres_session_factory(postgres_db):
     start_mappers()
     yield sessionmaker(bind=postgres_db)
+    metadata.drop_all(postgres_db.engine)
     clear_mappers()
 
 @pytest.fixture
