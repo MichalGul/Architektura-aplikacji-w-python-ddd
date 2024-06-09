@@ -41,8 +41,11 @@ def test_cli_app_reads_csvs_with_batches_and_orders_and_outputs_allocations(
         rows = list(csv.reader(f))
     assert rows == [
         ['orderid', 'sku', 'qty', 'batchref'],
+        [],
         [order_ref, sku1, '3', batch1],
+        [],
         [order_ref, sku2, '12', batch2],
+        []
     ]
 
 
@@ -73,7 +76,10 @@ def test_cli_app_also_reads_existing_allocations_and_can_append_to_them(
         rows = list(csv.reader(f))
     assert rows == [
         ['orderid', 'sku', 'qty', 'batchref'],
+        [],
         [old_order, sku, '10', batch1],
+        [],
         [new_order, sku, '7', batch2],
+        []
     ]
 

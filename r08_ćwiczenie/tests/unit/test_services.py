@@ -10,20 +10,21 @@ class FakeRepository(repository.AbstractRepository):
         super().__init__()
         self._products = set(products)
 
-    def _add(self, product):
+    def add(self, product):
         self._products.add(product)
 
-    def _get(self, sku):
+    def get(self, sku):
         return next((p for p in self._products if p.sku == sku), None)
 
 
 class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
 
     def __init__(self):
-        self.products = FakeRepository([])
+        self.products = repository.TrackingRepository(FakeRepository([]))
         self.committed = False
 
-    def _commit(self):
+    def commit(self):
+        self.publish_events()
         self.committed = True
 
     def rollback(self):
@@ -56,7 +57,7 @@ def test_allocate_errors_for_invalid_sku():
     uow = FakeUnitOfWork()
     services.add_batch("b1", "AREALSKU", 100, None, uow)
 
-    with pytest.raises(services.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
+    with pytest.raises(services.InvalidSku, match="Nieprawidłowa sku NONEXISTENTSKU"):
         services.allocate("o1", "NONEXISTENTSKU", 10, uow)
 
 

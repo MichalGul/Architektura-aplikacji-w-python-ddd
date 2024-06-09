@@ -81,6 +81,7 @@ def try_to_allocate(orderid, sku, exceptions):
         with unit_of_work.SqlAlchemyUnitOfWork() as uow:
             product = uow.products.get(sku=sku)
             product.allocate(line)
+            # Symulaja, że alokacja długo trwa
             time.sleep(0.2)
             uow.commit()
     except Exception as e:

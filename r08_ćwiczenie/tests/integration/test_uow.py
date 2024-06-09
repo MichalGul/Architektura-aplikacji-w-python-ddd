@@ -3,6 +3,8 @@ import threading
 import time
 import traceback
 from typing import List
+from unittest import mock
+
 import pytest
 from allocation.domain import model
 from allocation.service_layer import unit_of_work
@@ -48,6 +50,28 @@ def test_uow_can_retrieve_a_batch_and_allocate_to_it(session_factory):
 
     batchref = get_allocated_batch_ref(session, 'o1', 'HIPSTER-WORKBENCH')
     assert batchref == 'batch1'
+
+
+def test_uow_send_mail_on_out_of_stock(session_factory):
+    session = session_factory()
+    insert_batch(session, 'batch1', 'HIPSTER-WORKBENCH', 100, None)
+    session.commit()
+
+    uow = unit_of_work.TrackingUnitOfWork(unit_of_work.SqlAlchemyUnitOfWork(session_factory))
+    with uow:
+        product = uow.products.get(sku='HIPSTER-WORKBENCH')
+        line = model.OrderLine('o1', 'HIPSTER-WORKBENCH', 101)
+        with mock.patch("allocation.adapters.email.send_mail") as mock_send_mail:
+            product.allocate(line)
+            uow.commit()
+
+            mock_send_mail.assert_called_once()
+            assert mock_send_mail.call_args == mock.call(
+                "stock@made.com",
+                f"Out of stock for HIPSTER-WORKBENCH",
+            )
+
+
 
 
 def test_rolls_back_uncommitted_work_by_default(session_factory):

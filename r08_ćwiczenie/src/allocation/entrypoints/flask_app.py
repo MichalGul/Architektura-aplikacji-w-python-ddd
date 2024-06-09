@@ -16,7 +16,7 @@ def add_batch():
         eta = datetime.fromisoformat(eta).date()
     services.add_batch(
         request.json['ref'], request.json['sku'], request.json['qty'], eta,
-        unit_of_work.SqlAlchemyUnitOfWork(),
+        unit_of_work.TrackingUnitOfWork(unit_of_work.SqlAlchemyUnitOfWork()),
     )
     return 'OK', 201
 
@@ -28,7 +28,7 @@ def allocate_endpoint():
             request.json['orderid'],
             request.json['sku'],
             request.json['qty'],
-            unit_of_work.SqlAlchemyUnitOfWork(),
+            unit_of_work.TrackingUnitOfWork(unit_of_work.SqlAlchemyUnitOfWork()),
         )
     except services.InvalidSku as e:
         return jsonify({'message': str(e)}), 400

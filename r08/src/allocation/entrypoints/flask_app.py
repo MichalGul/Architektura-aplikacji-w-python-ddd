@@ -34,3 +34,4 @@ def allocate_endpoint():
         return jsonify({'message': str(e)}), 400
 
     return jsonify({'batchref': batchref}), 201
+
