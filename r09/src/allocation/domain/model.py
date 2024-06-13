@@ -26,13 +26,16 @@ class Product:
             return None
 
     def change_batch_quantity(self, ref: str, qty: int):
-        batch = next(b for b in self.batches if b.reference == ref)
+
+        batch = next(bat for bat in self.batches if bat.reference == ref)
         batch._purchased_quantity = qty
+        # emit recquire allocation, because when batch number changes from 50 to 20 and line is 25 we need to alocate to some different batch
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
             self.events.append(
                 events.AllocationRequired(line.orderid, line.sku, line.qty)
-            )
+           )
+
 
 @dataclass(unsafe_hash=True)
 class OrderLine:

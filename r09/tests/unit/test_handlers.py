@@ -6,6 +6,7 @@ import pytest
 from allocation.adapters import repository
 from allocation.domain import events
 from allocation.service_layer import handlers, messagebus, unit_of_work
+from allocation.service_layer.messagebus import FakeMessageBus, MessageBus
 
 
 class FakeRepository(repository.AbstractRepository):
@@ -40,13 +41,34 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
         pass
 
 
+class FakeUnitOfWorkWithFakeMessageBus(FakeUnitOfWork):
+
+    def __init__(self):
+        super().__init__()
+        self.events_published = []
+
+    def publish_events(self):
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                self.events_published.append(event)
+
+    def commit(self):
+        self._commit()
+        self.publish_events()
+
+
+
+
 
 class TestAddBatch:
 
     def test_for_new_product(self):
         uow = FakeUnitOfWork()
+        messagebus = MessageBus(uow=uow)
+
         messagebus.handle(
-            events.BatchCreated("b1", "CRUNCHY-ARMCHAIR", 100, None), uow
+            events.BatchCreated("b1", "CRUNCHY-ARMCHAIR", 100, None)
         )
         assert uow.products.get("CRUNCHY-ARMCHAIR") is not None
         assert uow.committed
@@ -103,9 +125,8 @@ class TestAllocate:
                 events.AllocationRequired("o1", "POPULAR-CURTAINS", 10), uow
             )
             assert mock_send_mail.call_args == mock.call(
-                "stock@made.com", f"Out of stock for POPULAR-CURTAINS"
+                "stock@made.com", f"Brak na stanie POPULAR-CURTAINS"
             )
-
 
 
 class TestChangeBatchQuantity:
@@ -137,9 +158,63 @@ class TestChangeBatchQuantity:
         assert batch1.available_quantity == 10
         assert batch2.available_quantity == 50
 
+        # this executes chain of events in test below we implement isolated version with fake message bus
         messagebus.handle(events.BatchQuantityChanged("batch1", 25), uow)
 
         # order1 lub order2 zostanie dezalokowane, więc będziemy mieć 25 - 20
         assert batch1.available_quantity == 5
         # i 20 zostanie alokowane do następnej partii
         assert batch2.available_quantity == 30
+
+
+    def test_reallocates_if_necessary_isolated(self):
+        uow = FakeUnitOfWorkWithFakeMessageBus()
+        event_history = [
+            events.BatchCreated("batch1", "INDIFFERENT-TABLE", 50, None),
+            events.BatchCreated("batch2", "INDIFFERENT-TABLE", 50, date.today()),
+            events.AllocationRequired("order1", "INDIFFERENT-TABLE", 20),
+            events.AllocationRequired("order2", "INDIFFERENT-TABLE", 20),
+        ]
+
+        for e in event_history:
+            messagebus.handle(e, uow)
+
+
+
+        [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
+        assert batch1.available_quantity == 10
+        assert batch2.available_quantity == 50
+
+        messagebus.handle(events.BatchQuantityChanged("batch1", 25), uow)
+
+        [reallocation_event] = uow.events_published
+
+        assert isinstance(reallocation_event, events.AllocationRequired)
+        assert reallocation_event.orderid in {"order1", "order2"}
+        assert reallocation_event.sku == "INDIFFERENT-TABLE"
+
+    def test_reallocates_if_necessary_isolated_v2(self):
+        uow = FakeUnitOfWork()
+        messagebus = FakeMessageBus(uow=uow)
+
+        event_history = [
+            events.BatchCreated("batch1", "INDIFFERENT-TABLE", 50, None),
+            events.BatchCreated("batch2", "INDIFFERENT-TABLE", 50, date.today()),
+            events.AllocationRequired("order1", "INDIFFERENT-TABLE", 20),
+            events.AllocationRequired("order2", "INDIFFERENT-TABLE", 20),
+        ]
+
+        for e in event_history:
+            messagebus.handle(e)
+
+        [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
+        assert batch1.available_quantity == 10
+        assert batch2.available_quantity == 50
+
+        messagebus.handle(events.BatchQuantityChanged("batch1", 25))
+
+        [reallocation_event] = messagebus.events_published
+
+        assert isinstance(reallocation_event, events.AllocationRequired)
+        assert reallocation_event.orderid in {"order1", "order2"}
+        assert reallocation_event.sku == "INDIFFERENT-TABLE"

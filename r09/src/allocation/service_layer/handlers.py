@@ -38,7 +38,6 @@ def allocate(
         return batchref
 
 
-
 def change_batch_quantity(
         event: events.BatchQuantityChanged, uow: unit_of_work.AbstractUnitOfWork
 ):
@@ -46,6 +45,8 @@ def change_batch_quantity(
         product = uow.products.get_by_batchref(batchref=event.ref)
         product.change_batch_quantity(ref=event.ref, qty=event.qty)
         uow.commit()
+
+
 
 
 # pylint: disable=unused-argument
