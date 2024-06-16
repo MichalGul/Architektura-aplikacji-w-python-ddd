@@ -36,3 +36,67 @@ def test_change_batch_quantity_leading_to_reallocation():
             data = json.loads(messages[-1]['data'])
             assert data['orderid'] == orderid
             assert data['batchref'] == later_batch
+
+
+@pytest.mark.usefixtures('postgres_db')
+@pytest.mark.usefixtures('restart_api')
+@pytest.mark.usefixtures('restart_redis_pubsub')
+def test_allocation_from_external_event():
+
+    # start with two batches and an order allocated to one of them
+    orderid, sku = random_orderid(), random_sku()
+    earlier_batch, later_batch = random_batchref('old'), random_batchref('newer')
+    api_client.post_to_add_batch(earlier_batch, sku, qty=10, eta='2011-01-02')
+    api_client.post_to_add_batch(later_batch, sku, qty=10, eta='2011-01-02')
+
+    subscription = redis_client.subscribe_to('line_allocated')
+
+    # allocate through external event
+    redis_client.publish_message('allocate', {
+        'orderid': orderid, 'sku': sku, 'qty': 5
+    })
+
+
+    # wait until we see a message saying the order has been reallocated
+    messages = []
+    for attempt in Retrying(stop=stop_after_delay(3), reraise=True):
+        with attempt:
+            message = subscription.get_message(timeout=1)
+            if message:
+                messages.append(message)
+                print(messages)
+            data = json.loads(messages[-1]['data'])
+            assert data['orderid'] == orderid
+            assert data['batchref'] == earlier_batch
+
+
+@pytest.mark.usefixtures('postgres_db')
+@pytest.mark.usefixtures('restart_api')
+@pytest.mark.usefixtures('restart_redis_pubsub')
+def test_add_batch_from_external_event():
+
+    # start with two batches and an order allocated to one of them
+    orderid, sku = random_orderid(), random_sku()
+    earlier_batch, later_batch = random_batchref('old'), random_batchref('newer')
+    # api_client.post_to_add_batch(earlier_batch, sku, qty=10, eta='2011-01-02')
+
+    subscription = redis_client.subscribe_to('batch_added')
+
+    # add batch through external event
+    redis_client.publish_message('add_batch', {
+        'ref': earlier_batch, 'sku': sku, 'qty': 10, "eta": '2011-01-02'
+    })
+
+
+    # wait until we see a message saying the order has been reallocated
+    messages = []
+    for attempt in Retrying(stop=stop_after_delay(3), reraise=True):
+        with attempt:
+            message = subscription.get_message(timeout=1)
+            if message:
+                messages.append(message)
+                print(messages)
+            data = json.loads(messages[-1]['data'])
+            assert data['ref'] == earlier_batch
+            assert data['sku'] == sku
+            assert data['qty'] == 10

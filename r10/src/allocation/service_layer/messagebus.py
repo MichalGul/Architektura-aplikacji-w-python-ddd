@@ -35,7 +35,7 @@ def handle_event(
 ):
     for handler in EVENT_HANDLERS[type(event)]:
         try:
-            logger.debug('Obsługa zdarzenia %s za pomocą procedury %s', event, handler)
+            logger.debug(f'Obsługa zdarzenia {event} za pomocą procedury {handler}')
             handler(event, uow=uow)
             queue.extend(uow.collect_new_events())
         except Exception:
@@ -48,7 +48,7 @@ def handle_command(
     queue: List[Message],
     uow: unit_of_work.AbstractUnitOfWork
 ):
-    logger.debug('Obsługa polecenia %s', command)
+    logger.debug(f'Obsługa polecenia {command}')
     try:
         handler = COMMAND_HANDLERS[type(command)]
         result = handler(command, uow=uow)

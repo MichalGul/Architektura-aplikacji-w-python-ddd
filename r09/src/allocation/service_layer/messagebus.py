@@ -56,6 +56,7 @@ class FakeMessageBus(AbstractMessageBus):
             self.events_published.extend(self.uow.collect_new_events())
 
 
+
 def handle(event: events.Event, uow: unit_of_work.AbstractUnitOfWork):
     results = []
     queue = [event]

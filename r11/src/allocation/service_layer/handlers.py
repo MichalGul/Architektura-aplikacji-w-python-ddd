@@ -22,6 +22,11 @@ def add_batch(
         product.batches.append(model.Batch(
             cmd.ref, cmd.sku, cmd.qty, cmd.eta
         ))
+        # populate event
+        product.events.append(events.BatchCreated(
+            cmd.ref, cmd.sku, cmd.qty
+        ))
+
         uow.commit()
 
 
@@ -62,3 +67,10 @@ def publish_allocated_event(
         event: events.Allocated, uow: unit_of_work.AbstractUnitOfWork,
 ):
     redis_eventpublisher.publish('line_allocated', event)
+
+
+def publish_batch_created_event(
+        event: events.BatchCreated, uow: unit_of_work.AbstractUnitOfWork,
+):
+    redis_eventpublisher.publish('batch_added', event)
+
