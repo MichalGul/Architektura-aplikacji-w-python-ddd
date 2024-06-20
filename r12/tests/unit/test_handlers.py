@@ -84,7 +84,7 @@ class TestAllocate:
         uow = FakeUnitOfWork()
         messagebus.handle(commands.CreateBatch("b1", "AREALSKU", 100, None), uow)
 
-        with pytest.raises(handlers.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
+        with pytest.raises(handlers.InvalidSku, match="Nieprawidłowa sku NONEXISTENTSKU"):
             messagebus.handle(
                 commands.Allocate("o1", "NONEXISTENTSKU", 10), uow
             )
@@ -111,7 +111,7 @@ class TestAllocate:
                 commands.Allocate("o1", "POPULAR-CURTAINS", 10), uow
             )
             assert mock_send_mail.call_args == mock.call(
-                "stock@made.com", f"Brak na stanie POPULAR-CURTAINS"
+                "stock@made.com", f"Out of stock for POPULAR-CURTAINS"
             )
 
 

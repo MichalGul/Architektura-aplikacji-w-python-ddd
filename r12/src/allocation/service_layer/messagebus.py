@@ -8,6 +8,7 @@ from . import handlers
 if TYPE_CHECKING:
     from . import unit_of_work
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 Message = Union[commands.Command, events.Event]
@@ -35,8 +36,9 @@ def handle_event(
             logger.debug('Obsługa zdarzenia %s za pomocą procedury %s', event, handler)
             handler(event, uow=uow)
             queue.extend(uow.collect_new_events())
-        except Exception:
+        except Exception as e:
             logger.exception('Wyjątek obsługi zdarzenia %s', event)
+            print(e)
             continue
 
 
