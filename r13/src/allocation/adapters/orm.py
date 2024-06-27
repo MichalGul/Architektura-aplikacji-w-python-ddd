@@ -7,6 +7,7 @@ from sqlalchemy.orm import mapper, relationship
 
 from allocation.domain import model
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 metadata = MetaData()

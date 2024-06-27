@@ -34,4 +34,4 @@ def test_out_of_stock_email(bus):
     email = get_email_from_mailhog(sku)
     assert email['Raw']['From'] == 'allocations@example.com'
     assert email['Raw']['To'] == ['stock@made.com']
-    assert f'Brak na stanie {sku}' in email['Raw']['Data']
+    assert f'Out of stock for {sku}' in email['Raw']['Data']
