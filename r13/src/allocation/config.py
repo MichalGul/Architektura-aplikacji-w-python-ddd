@@ -1,5 +1,7 @@
 import os
+from dotenv import load_dotenv
 
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 def get_postgres_uri():
     host = os.environ.get('DB_HOST', 'localhost')
@@ -24,3 +26,9 @@ def get_email_host_and_port():
     port = 11025 if host == 'localhost' else 1025
     http_port = 18025 if host == 'localhost' else 8025
     return dict(host=host, port=port, http_port=http_port)
+
+
+def get_sms_sid_and_token():
+    sid = os.environ.get('TWILIO_ACCOUNT_SID', 'avc')
+    token = os.environ.get('TWILIO_AUTH_TOKEN', 'abc')
+    return dict(sid=sid, token=token)

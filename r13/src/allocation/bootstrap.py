@@ -1,6 +1,7 @@
 import inspect
 from typing import Callable
-from allocation.adapters import orm, redis_eventpublisher
+from allocation.adapters import orm
+from allocation.adapters.redis_eventpublisher import AbstractPublisher, RedisPublisher
 from allocation.adapters.notifications import (
     AbstractNotifications, EmailNotifications
 )
@@ -11,11 +12,11 @@ def bootstrap(
     start_orm: bool = True,
     uow: unit_of_work.AbstractUnitOfWork = unit_of_work.SqlAlchemyUnitOfWork(),
     notifications: AbstractNotifications = None,
-    publish: Callable = redis_eventpublisher.publish,
+    publish: AbstractPublisher = RedisPublisher,
 ) -> messagebus.MessageBus:
 
     if notifications is None:
-        notifications = EmailNotifications()
+        notifications = EmailNotifications(destination_email="stock@made.com")
 
     if start_orm:
         orm.start_mappers()

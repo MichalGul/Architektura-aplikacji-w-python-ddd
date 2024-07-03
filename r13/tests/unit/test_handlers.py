@@ -47,6 +47,7 @@ class FakeNotifications(notifications.AbstractNotifications):
 
     def __init__(self):
         self.sent = defaultdict(list)  # typ: Dict[str, List[str]]
+        self.destination = 'stock@made.com'
 
     def send(self, destination, message):
         self.sent[destination].append(message)

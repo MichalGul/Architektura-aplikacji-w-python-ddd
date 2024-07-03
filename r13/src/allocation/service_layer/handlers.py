@@ -129,7 +129,7 @@ class SendOutOfStockNotificationHandler:
 
     def __call__(self, event: events.OutOfStock):
         self.notifications.send(
-            'stock@made.com',
+            self.notifications.destination,
             f'Out of stock for {event.sku}',
         )
 
